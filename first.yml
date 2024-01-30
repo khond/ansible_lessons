@@ -1,0 +1,75 @@
+---
+- name: ping to the servers
+  hosts: all
+  become: yes
+  gather_facts: yes
+
+  vars:
+    packeges:
+      - apache2
+      - atop
+      - tree
+    file_src: ansible_file
+    file_dest: /opt 
+
+  tasks:
+    
+    - name: Task pinging
+      ping:
+
+    - block:
+
+      - name: Update repositories cache and install "foo" package
+        apt:
+          name: apache2
+          update_cache: yes
+
+      - name: Install packeges
+        apt:
+          name: "{{ packeges }}"
+          state: present
+            
+      when: ansible_distribution == "Ubuntu"
+
+    - name: Copy file from local to remote
+      copy:
+        src: "{{ file_src }}"
+        dest: "{{ file_dest }}"
+        mode: 0777
+
+    - name: Create groups
+      group:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - test
+        - bdg
+
+    - name: Create users
+      user:
+        name: "{{ item.vmname }}"
+        shell: /bin/bash
+        groups: test, bdg
+        append: yes
+        home: "/home/{{ item.homedir }}"
+      with_items:
+        - { vmname: 'vm1', homedir: 'vm1' }
+        - { vmname: 'vm2', homedir: 'vm2' }
+
+
+    - name: Print my var
+      debug:
+        var: packeges
+
+    - name: Print some message
+      debug:
+        msg: "My defined var is {{ packeges }}"
+
+    - name: Print out predifined var
+      debug:
+        var: ansible_distribution
+
+    - name: Print distribution and version
+      debug:
+        msg: "Linux dist: {{ ansible_distribution }},  version: {{ ansible_distribution_version }}"
+
